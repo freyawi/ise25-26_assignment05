@@ -1,6 +1,7 @@
 package de.seuhd.campuscoffee.acctest;
 
 import de.seuhd.campuscoffee.api.dtos.PosDto;
+import de.seuhd.campuscoffee.domain.exceptions.PosNotFoundException;
 import de.seuhd.campuscoffee.domain.model.CampusType;
 import de.seuhd.campuscoffee.domain.model.PosType;
 import de.seuhd.campuscoffee.domain.ports.PosService;
@@ -17,6 +18,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -92,8 +94,14 @@ public class CucumberPosSteps {
     }
 
     // TODO: Add Given step for new scenario
-
     // When -----------------------------------------------------------------------
+    @Given( "List with POS Elements")
+    public void listWithPosElements(List<PosDto> posList) {
+        this.createdPosList = posList;
+        //Erstell Liste mit allen POS elementen
+
+    }
+
 
     @When("I insert POS with the following elements")
     public void insertPosWithTheFollowingValues(List<PosDto> posList) {
@@ -102,8 +110,31 @@ public class CucumberPosSteps {
     }
 
     // TODO: Add When step for new scenario
-
     // Then -----------------------------------------------------------------------
+    @When("List got updated")
+    public void listGotUpdated(List<Map<String,String>> updates) {
+        List<PosDto> updatedList= new ArrayList<>();
+
+        for(Map<String,String> i: updates) {
+            String name= i.get("name");
+            String description= i.get("description");
+
+            PosDto posDtoUpdate = createdPosList.stream() // namen in stream konvertieren
+            .filter(pos -> pos.name().equalsIgnoreCase(name))
+            .findFirst()
+            .orElseThrow(() -> new PosNotFoundException("POS '" + "' nicht gefunden"+ name )); // eigene Exeption werfen
+
+            PosDto updatedPos= posDtoUpdate.toBuilder()
+                    .name(name)
+                    .description(description)
+                    .build();
+
+            updatedList.add(updatedPos);
+        }
+        createdPosList = updatedList;
+    }
+
+
 
     @Then("the POS list should contain the same elements in the same order")
     public void thePosListShouldContainTheSameElementsInTheSameOrder() {
@@ -114,4 +145,21 @@ public class CucumberPosSteps {
     }
 
     // TODO: Add Then step for new scenario
+    @Then("update the list")
+    public void UpdateTheList() {
+        List<PosDto> retrievedPosList = retrievePos();
+
+        //erst testen was in Liste geupdated wurde
+        for(PosDto i: retrievedPosList) {
+            assertThat(i.description())
+                    .as("Description not empty")
+                    .isNotBlank();
+        }
+
+        // Überprüfen ob AKtualisierung erfolgreich hinzugefügt wurde
+        assertThat(retrievedPosList)
+                .hasSize(createdPosList.size()) // es sollen keine Elemente hinzugekommen/ weg sein
+                .as("Updating POS list was successfull")
+                .isNotEmpty();
+    }
 }
