@@ -2,17 +2,22 @@ package de.seuhd.campuscoffee.api.controller;
 
 import de.seuhd.campuscoffee.api.dtos.PosDto;
 import de.seuhd.campuscoffee.api.mapper.PosDtoMapper;
+import de.seuhd.campuscoffee.domain.exceptions.PosNotFoundException;
 import de.seuhd.campuscoffee.domain.model.CampusType;
+import de.seuhd.campuscoffee.domain.model.Pos;
 import de.seuhd.campuscoffee.domain.ports.PosService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Controller for handling POS-related API requests.
@@ -43,6 +48,29 @@ public class PosController {
     }
 
     // TODO: Implement a new GET endpoint that supports filtering POS by name, e.g., /filter?name=Schmelzpunkt
+    // Aufgabe 5.1 a
+    @GetMapping("/filter")
+    public ResponseEntity<List<PosDto>> getByName(
+            @RequestParam String name){
+        log.info("Filtering by name: {}", name);
+            List<Pos> posList= posService.getAll();
+
+        List <PosDto> dtoList= posList.stream()
+                .filter(pos -> pos.name().toLowerCase().contains(name.toLowerCase()))
+                .map(posDtoMapper::fromDomain)
+                .collect(Collectors.toList());
+
+        if (dtoList.isEmpty()) {
+            throw new PosNotFoundException("No pos with name " + name);
+
+        }
+
+
+        log.info("Found {} pos", dtoList.size(),name);
+        return ResponseEntity.ok(dtoList);
+
+
+    }
 
     @PostMapping("")
     public ResponseEntity<PosDto> create(
