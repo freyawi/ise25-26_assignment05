@@ -98,6 +98,7 @@ public class CucumberPosSteps {
     @Given( "List with POS Elements")
     public void listWithPosElements(List<PosDto> posList) {
         this.createdPosList = posList;
+        assertThat(posList).isNotEmpty();
         //Erstell Liste mit allen POS elementen
 
     }
@@ -111,7 +112,7 @@ public class CucumberPosSteps {
 
     // TODO: Add When step for new scenario
     // Then -----------------------------------------------------------------------
-    @When("List got updated")
+    @When("I updated the List (descrpition)")
     public void listGotUpdated(List<Map<String,String>> updates) {
         List<PosDto> updatedList= new ArrayList<>();
 
@@ -131,7 +132,7 @@ public class CucumberPosSteps {
 
             updatedList.add(updatedPos);
         }
-        createdPosList = updatedList;
+        createdPosList = updatePos(updatedList); // vorgegebene Funktion nutzen
     }
 
 
@@ -145,7 +146,7 @@ public class CucumberPosSteps {
     }
 
     // TODO: Add Then step for new scenario
-    @Then("update the list")
+    @Then("cheching if updating worked")
     public void UpdateTheList() {
         List<PosDto> retrievedPosList = retrievePos();
 
@@ -158,7 +159,8 @@ public class CucumberPosSteps {
 
         // Überprüfen ob AKtualisierung erfolgreich hinzugefügt wurde
         assertThat(retrievedPosList)
-                .hasSize(createdPosList.size()) // es sollen keine Elemente hinzugekommen/ weg sein
+                .hasSize(createdPosList.size())// es sollen keine Elemente hinzugekommen/ weg sein
+                .containsExactlyInAnyOrderElementsOf(createdPosList)
                 .as("Updating POS list was successfull")
                 .isNotEmpty();
     }
